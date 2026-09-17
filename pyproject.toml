@@ -33,6 +33,7 @@ all = ["om4mtools-python[gui,web,cli]"]
 dev = [
     "pytest>=7.0",
     "pytest-cov",
+    "httpx",
     "ruff",
     "black",
 ]
