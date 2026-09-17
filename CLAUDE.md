@@ -29,8 +29,7 @@ Python library for fringe-pattern processing (OM4M group).
 
 **`core/` never imports from `cli/`, `gui/`, or `web/`.** Interfaces
 depend on core; core never depends on interfaces. `core/` must have
-zero imports of Qt/PyQt, Typer, FastAPI, or anything from `io/`
-loaders that isn't pure computation.
+zero imports of Qt/PyQt, Typer, or FastAPI.
 
 This is enforced by `tests/test_architecture.py` (an AST/import-graph
 scan), not just convention — treat a violation there as a build
@@ -43,7 +42,6 @@ break, not a lint warning. Run it before considering any change to
 src/om4mtools/
 ├── core/          # pure algorithms, no I/O deps — Demodulator, Unwrapper,
 │                  #   PathFollower, DisplayProjector
-├── io/            # image/file loading, format handling
 ├── resources/     # SHIPPED — icons, default schemas
 ├── cli/           # tool-oriented (mirrors gui/), not one-per-class
 │   └── <tool>/
@@ -57,7 +55,7 @@ src/om4mtools/
 └── web/
 tests/
 ├── test_architecture.py   # import-graph check — core/ stays clean
-├── unit/                  # core/ + io/ — this is the `smoke` subset
+├── unit/                  # core/ only — this is the `smoke` subset
 ├── integration/           # test_cli/, test_web, test_gui/
 └── data/                  # small synthetic fixtures, not shipped
 benchmarks/                # asv perf regression suite for core/
@@ -72,13 +70,20 @@ hold the logic; `main.py`/`launcher.py` are thin standalone wrappers.
 When adding a new tool, follow this exact split — don't put argv
 parsing or Qt bootstrap logic in the notebook-callable file.
 
+**No `io/` subpackage for now**: image reading/writing goes straight
+through OpenCV (`cv2.imread`/`cv2.imwrite`) at the point of use — in
+`cli/<tool>/runner.py`, `gui/<tool>/widget.py`, or `web/` — not through
+a shared loader wrapper. `core/` still never does file I/O itself. If
+enough duplicated OpenCV boilerplate accumulates across tools, revisit
+this and reintroduce `io/` at that point.
+
 **Packaging discipline**: anything in the wheel lives under
 `src/om4mtools/resources/`. `examples/` and `tests/data/` stay outside
 `src/` and are excluded from sdist/wheel in `pyproject.toml`. Check
 this whenever adding new data files.
 
 **Optional extras** — `pip install om4mtools-python` alone must only
-pull in `core`/`io`:
+pull in `core` plus its direct dependencies (numpy, scipy, OpenCV):
 
 ```toml
 [project.optional-dependencies]

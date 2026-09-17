@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import cv2
 import numpy as np
 
 from om4mtools.core import Demodulator, Unwrapper
@@ -28,9 +29,21 @@ def process_fringe_pattern(
     -------
     numpy.ndarray
         Unwrapped phase map.
-    """
-    from om4mtools.io.images import load_image
 
-    image = load_image(image_path)
+    Raises
+    ------
+    FileNotFoundError
+        If `image_path` does not exist.
+    OSError
+        If OpenCV could not decode the file at `image_path`.
+    """
+    path = Path(image_path)
+    if not path.exists():
+        raise FileNotFoundError(path)
+
+    image = cv2.imread(str(path), cv2.IMREAD_GRAYSCALE)
+    if image is None:
+        raise OSError(f"could not decode image: {path}")
+
     wrapped = Demodulator(carrier_frequency).demodulate(image)
     return Unwrapper().unwrap(wrapped)

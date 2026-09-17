@@ -8,7 +8,7 @@ naming pattern as `beautifulsoup4` → `bs4`.
 ## Install
 
 ```bash
-pip install om4mtools-python          # core + io only
+pip install om4mtools-python          # core only (OpenCV used directly for I/O)
 pip install "om4mtools-python[cli]"   # + command-line tools
 pip install "om4mtools-python[gui]"   # + PyQt6 desktop tools
 pip install "om4mtools-python[web]"   # + FastAPI web layer

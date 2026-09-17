@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import cv2
 import numpy as np
 
 
@@ -22,8 +23,20 @@ def load_and_describe(image_path: str | Path) -> dict[str, object]:
     -------
     dict[str, object]
         Summary with keys ``"path"``, ``"shape"``, and ``"dtype"``.
-    """
-    from om4mtools.io.images import load_image
 
-    image: np.ndarray = load_image(image_path)
-    return {"path": str(image_path), "shape": image.shape, "dtype": str(image.dtype)}
+    Raises
+    ------
+    FileNotFoundError
+        If `image_path` does not exist.
+    OSError
+        If OpenCV could not decode the file at `image_path`.
+    """
+    path = Path(image_path)
+    if not path.exists():
+        raise FileNotFoundError(path)
+
+    image: np.ndarray = cv2.imread(str(path), cv2.IMREAD_GRAYSCALE)
+    if image is None:
+        raise OSError(f"could not decode image: {path}")
+
+    return {"path": str(path), "shape": image.shape, "dtype": str(image.dtype)}

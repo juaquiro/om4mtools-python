@@ -1,9 +1,8 @@
 """Import-graph guard: `core/` must never depend on the interface layers.
 
 Enforces the dependency-direction rule from CLAUDE.md: `core/` never imports
-from `cli/`, `gui/`, or `web/`, and has zero imports of Qt/PyQt, Typer,
-FastAPI, or `io/` loaders. A violation here is a build break, not a lint
-warning.
+from `cli/`, `gui/`, or `web/`, and has zero imports of Qt/PyQt, Typer, or
+FastAPI. A violation here is a build break, not a lint warning.
 """
 
 from __future__ import annotations
@@ -15,7 +14,7 @@ import pytest
 
 CORE_DIR = Path(__file__).resolve().parent.parent / "src" / "om4mtools" / "core"
 
-FORBIDDEN_OM4MTOOLS_SUBPACKAGES = {"cli", "gui", "web", "io"}
+FORBIDDEN_OM4MTOOLS_SUBPACKAGES = {"cli", "gui", "web"}
 
 FORBIDDEN_THIRD_PARTY_PREFIXES = (
     "PyQt5",
@@ -57,7 +56,7 @@ def _violation(module_name: str) -> str | None:
 
 @pytest.mark.smoke
 def test_core_has_no_forbidden_imports() -> None:
-    """`core/` must not import `cli/`, `gui/`, `web/`, `io/`, Qt, Typer, or FastAPI."""
+    """`core/` must not import `cli/`, `gui/`, `web/`, Qt, Typer, or FastAPI."""
     violations: list[str] = []
     for path in _core_module_files():
         tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
