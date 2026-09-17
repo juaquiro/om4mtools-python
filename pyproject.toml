@@ -1,0 +1,76 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "om4mtools-python"
+version = "0.1.0"
+description = "Fringe-pattern processing library (OM4M group)"
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.10"
+authors = [{ name = "om4mtools-python contributors" }]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: BSD License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Image Processing",
+]
+dependencies = [
+    "numpy>=1.24",
+    "scipy>=1.10",
+]
+
+[project.optional-dependencies]
+gui = ["PyQt6", "pyqtgraph"]
+web = ["fastapi", "uvicorn"]
+cli = ["typer", "rich"]
+all = ["om4mtools-python[gui,web,cli]"]
+dev = [
+    "pytest>=7.0",
+    "pytest-cov",
+    "ruff",
+    "black",
+]
+docs = [
+    "sphinx>=7.0",
+    "alabaster",
+]
+
+[project.urls]
+Homepage = "https://github.com/juaquiro/om4mtools-python"
+Repository = "https://github.com/juaquiro/om4mtools-python"
+
+[project.scripts]
+om4m-imageviewer = "om4mtools.cli.imageviewer.main:app"
+om4m-fringeprocessor = "om4mtools.cli.fringeprocessor.main:app"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+"om4mtools.resources" = ["**/*"]
+
+[tool.black]
+line-length = 99
+target-version = ["py310", "py311", "py312"]
+
+[tool.ruff]
+line-length = 99
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W"]
+
+[tool.pytest.ini_options]
+markers = [
+    "smoke: fast, dependency-free tests over core/ (required for the develop PR gate)",
+]
+testpaths = ["tests"]
+
+[tool.coverage.run]
+source = ["src/om4mtools"]

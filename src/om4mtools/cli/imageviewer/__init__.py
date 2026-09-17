@@ -1,0 +1,1 @@
+"""Imageviewer tool: CLI skin."""

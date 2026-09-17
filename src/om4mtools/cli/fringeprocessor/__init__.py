@@ -1,0 +1,1 @@
+"""Fringeprocessor tool: CLI skin."""
