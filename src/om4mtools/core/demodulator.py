@@ -1,35 +1,40 @@
-"""Fringe-pattern demodulation."""
-
-from __future__ import annotations
+from abc import ABC, abstractmethod
+from typing import Any
+from collections.abc import Sequence
 
 import numpy as np
+import numpy.typing as npt
+
+from .demodulator_params import DemodParams
+
+FloatArray = npt.NDArray[np.floating[Any]] # Any float precision (float32, float64, ...)
+ComplexArray = npt.NDArray[np.complex128]  
+
+class Demodulator(ABC):
+
+    def __init__(self)->None:
+        self.demod_params=DemodParams()
+        self._setup()          
+
+    @abstractmethod
+    def _setup(self) -> None:
+        ...
+
+    @abstractmethod
+    def process(self, igram_list: Sequence[FloatArray])->list[ComplexArray]:
+        ...
+
+    
 
 
-class Demodulator:
-    """Extract phase and amplitude from a fringe pattern.
 
-    Parameters
-    ----------
-    carrier_frequency : tuple[float, float]
-        Spatial carrier frequency ``(fx, fy)`` of the fringe pattern, in
-        cycles per pixel.
-    """
 
-    def __init__(self, carrier_frequency: tuple[float, float]) -> None:
-        self.carrier_frequency = carrier_frequency
 
-    def demodulate(self, image: np.ndarray) -> np.ndarray:
-        """Compute the wrapped phase map of a fringe pattern.
 
-        Parameters
-        ----------
-        image : numpy.ndarray
-            2-D grayscale fringe-pattern image.
 
-        Returns
-        -------
-        numpy.ndarray
-            Wrapped phase map, same shape as `image`, with values in
-            ``(-pi, pi]``.
-        """
-        raise NotImplementedError
+
+
+        
+
+
+
