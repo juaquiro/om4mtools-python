@@ -60,7 +60,8 @@ tests/
 └── data/                  # small synthetic fixtures, not shipped
 benchmarks/                # asv perf regression suite for core/
 .binder/                   # env spec so examples/notebooks/ run on Binder
-docs/api/                  # autodoc/autosummary from docstrings
+docs/                      # Sphinx source — conf.py, index.md, api/, guide/
+docs/api/                  # autosummary generates one page per public class
 examples/                  # demo notebooks/scripts — NOT shipped, excluded from sdist/wheel
 ```
 
@@ -145,6 +146,106 @@ PR from `develop` or a `hotfix/*` branch).
 When adding tests for `core/`, mark fast, dependency-free ones
 `@pytest.mark.smoke` so they run in the `develop` gate; integration
 tests under `cli`/`gui`/`web` stay out of `smoke`.
+
+## Documentation (Sphinx)
+
+**Tool: Sphinx** — not MkDocs. Follows the numpy/scipy/scikit-image/napari ecosystem
+convention; `autodoc`/`autosummary` are Sphinx-native and better suited to a
+class-reference-heavy library than mkdocstrings.
+
+```
+docs/
+├── conf.py
+├── index.md          # MyST Markdown entry point
+├── api/              # autosummary — one page per public class, generated
+└── guide/            # quickstart, cli, gui, web guides — authored in .md
+```
+
+```python
+# conf.py essentials
+extensions = [
+    "sphinx.ext.autodoc",
+    "sphinx.ext.autosummary",
+    "sphinx.ext.napoleon",   # NumPy/Google-style docstrings
+    "myst_parser",           # write guide pages in Markdown, not .rst
+    "nbsphinx",              # render examples/notebooks/ directly
+]
+autosummary_generate = True
+html_theme = "pydata_sphinx_theme"
+```
+
+- Guide pages go in `docs/guide/` as `.md` (MyST) — no forced `.rst`.
+- Example notebooks in `examples/` are rendered via `nbsphinx` with the
+  `.binder/` launch button.
+- The `full-suite` CI gate includes a docs build (`make html` must pass clean).
+
+## Design decisions
+
+**Parameter dataclasses use `@dataclass(slots=True)`** — e.g. `DemodParams`,
+and any future `*Params` class. `slots=True` prevents silent dynamic attribute
+creation, so a typo like `p.n_intgrams = 5` (instead of `p.n_integrams`) raises
+`AttributeError` immediately rather than creating a phantom field that gets
+silently ignored. Always use `slots=True` on parameter/config dataclasses.
+
+**`DemodParams.delta_list` is typed as `tuple` (variable-length), not `list`.**
+Tuples are immutable, so once a `DemodParams` is constructed the sequence of
+phase shifts cannot be modified in-place — a caller must create a new
+`DemodParams` to change it. This is intentional: it prevents accidental
+mid-run mutation. The contents of `delta_list` (length, value ranges, etc.)
+are validated by `_validate()` at construction time. Any future sequence-valued
+field in a `*Params` class should follow the same pattern unless mutability is
+explicitly required.
+
+**All parameter validation is delegated to `DemodParams` (and equivalent `*Params`
+classes), never to the core class itself.** Two levels:
+
+- `_validate()` — called from `__post_init__`; validates each field individually
+  at construction time, and normalizes field values when needed (e.g. converting
+  an acceptable input form into the canonical internal representation).
+- `verify_params()` — called by `Demodulator.process()` (and equivalent entry
+  points) just before execution; checks cross-field constraints and
+  algorithm-level preconditions.
+
+`Demodulator` (and other core classes) must not duplicate or shadow this logic.
+If a new validation rule is needed, it goes in `*Params`, not in the core class.
+
+**Type aliases for NumPy arrays** — defined once and reused across `core/`:
+
+```python
+import numpy.typing as npt
+import numpy as np
+from typing import Any
+
+FloatArray   = npt.NDArray[np.floating[Any]]                   # float32, float64, …
+RealArray    = npt.NDArray[np.integer[Any] | np.floating[Any]] # uint8, uint16, float64, …
+ComplexArray = npt.NDArray[np.complex128]
+```
+
+- **`RealArray`** is the correct input type for `process()` — callers may pass
+  raw camera frames (uint8/uint16) or synthetic igrams (float64). `process()`
+  converts internally with `np.asarray(ig, dtype=np.float64)`, which is a no-op
+  when the array is already float64.
+- **`FloatArray`** is for intermediate or output arrays that are guaranteed to be
+  floating-point. Do not use it for public method inputs that accept camera data.
+- Never use `NDArray[np.float64]` for inputs — it rejects float32 and integers.
+
+**Use `Sequence` (not `list`) for read-only sequence inputs in public methods.**
+`list` is invariant in type checkers: a `list[NDArray[np.float64]]` is not
+accepted where `list[NDArray[np.floating[Any]]]` is expected, even though
+`float64` is a floating type. `collections.abc.Sequence` is covariant, so the
+type checker accepts any compatible element type. It also lets callers pass a
+tuple or any other sequence, not just a list. Rule: if a method only reads a
+sequence argument, type it as `Sequence[T]`; reserve `list[T]` for outputs or
+arguments the method mutates.
+
+Example: `Demodulator.process(self, igram_list: Sequence[RealArray]) -> list[ComplexArray]`
+
+**Core classes do NOT implement `__setattr__`/`__getattr__` to proxy their
+`*Params` objects.** The canonical access pattern is explicit:
+`demodulator.demod_params.some_param`. Adding `__setattr__`/`__getattr__`
+forwarding would not remove `.demod_params` access (both paths would coexist),
+and would create confusion about which attributes belong to the class vs. the
+params object. Do not add this forwarding to `Demodulator` or any other core class.
 
 ## Before finishing any change
 
