@@ -2,14 +2,11 @@ from abc import ABC, abstractmethod
 from typing import Any
 from collections.abc import Sequence
 
-import numpy as np
-import numpy.typing as npt
+from .types import RealArray, ComplexArray
 
 from .demodulator_params import DemodParams
 
-FloatArray   = npt.NDArray[np.floating[Any]]                    # float32, float64, …
-RealArray    = npt.NDArray[np.integer[Any] | np.floating[Any]]  # uint8, uint16, float64, …
-ComplexArray = npt.NDArray[np.complex128]
+
 
 
 class Demodulator(ABC):
@@ -23,7 +20,18 @@ class Demodulator(ABC):
         ...
 
     @abstractmethod
-    def process(self, igram_list: Sequence[RealArray]) -> list[ComplexArray]:
+    def process(self, igram_list: Sequence[RealArray]) -> tuple[ComplexArray, ...]:
+        """Demodulate interferograms.
+
+        All demodulators must implement this function. 
+        The input is a sequence of RealArray and the output is a tuple of CppmpexArray
+        Each demodulator has a differnet output signature, but always returns a tuple
+        Input is `Sequence` (covariant, read-only) so callers can pass
+        a list, tuple, or any ordered collection without a forced copy.
+        Output is `tuple` (immutable) so the result cannot be mutated
+        by the caller after construction; subclasses returning exactly
+        one array may narrow the return type to `tuple[ComplexArray]`.
+        """
         ...
 
     
