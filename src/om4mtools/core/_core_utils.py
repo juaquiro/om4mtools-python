@@ -35,27 +35,34 @@ def vortex_transform(igram: RealArray) -> ComplexArray:
  
  
 def normalize(igram: RealArray) -> RealArray:
-    """Rescale ``image`` to the [0, 1] range.
- 
-    Shared normalization step used across several demodulation and
-    display-generation routines. Not part of the public API because
-    its exact behavior (e.g. how it handles a constant image, or
-    values outside the observed min/max) is an implementation detail
-    other core/ code relies on, not a documented contract for users.
- 
+    r"""Normalize an interferogram to unit background and modulation.
+
+    Notes
+    -----
+    Given an interferogram
+
+    .. math::
+        g = b + m \cos(\phi)
+
+    with :math:`b` the background and :math:`m` the modulation, the
+    normalization computes
+
+    .. math::
+        g_n = \cos(\phi) 
+
+    i.e. the interferogram with :math:`b = 0` and :math:`m = 1`.
+
     Parameters
     ----------
-    image : RealArray
-        Input array.
- 
+    igram : RealArray
+        The interferogram :math:`g`.
+
     Returns
     -------
     RealArray
-        Normalized array, same shape as ``image``.
+        The normalized interferogram :math:`g_n = \cos(\phi)`.
     """
-    # TODO: implement (e.g. (image - image.min()) / (image.max() -
-    # image.min()), with a defined behavior for the constant-image
-    # edge case).
+    
     raise NotImplementedError
 
 

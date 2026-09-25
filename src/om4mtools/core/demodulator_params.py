@@ -1,11 +1,33 @@
 from dataclasses import dataclass
 from typing import Any
+from .types import ComplexArray
 
 
 @dataclass(slots=True)
 class DemodParams:
+    """Parameters and results for a `Demodulator`.
+
+    Holds both the configuration a demodulator needs before `process()`
+    runs (`n_igrams`, `delta_list`, `roi_mask`, `roi_norm_th`) and the
+    output written by `process()` (`z_list`). Field assignment is
+    validated per-field via `_validate()`; call `verify_params()` before
+    processing to check cross-field consistency.
+
+    Examples
+    --------
+    >>> p = DemodParams()
+    >>> p.n_igrams = 5
+    >>> p.delta_list = [0, 1.57, 3.14, 4.71, 6.28]  # stored as a tuple of floats
+    >>> p.verify_params()  # ok
+    >>> p.n_igrams = 6  # allowed: no eager cross-check
+    >>> p.verify_params()
+    Traceback (most recent call last):
+        ...
+    ValueError: delta_list has 5 entries, but n_igrams is 6
+    """
+
     roi_mask: Any = None
-    z_list: Any = None
+    z_list: tuple[ComplexArray, ...] | None = None 
     n_igrams: int | None = None
     roi_norm_th: float = 0.15
     delta_list: tuple[float, ...] | None = None
@@ -42,16 +64,3 @@ class DemodParams:
                 f"delta_list has {len(self.delta_list)} entries, "
                 f"but n_igrams is {self.n_igrams}"
             )
-
-
-"""
-intended use
-
-p = DemodParams()
-p.n_igrams = 5
-p.delta_list = [0, 1.57, 3.14, 4.71, 6.28]   # stored as a tuple of floats
-p.verify_params()                               # ok
-
-p.n_igrams = 6                                 # allowed: no eager cross-check
-p.verify_params()                              # ValueError: 5 entries vs n_igrams 6
-"""

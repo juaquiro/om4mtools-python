@@ -83,6 +83,20 @@ this and reintroduce `io/` at that point.
 `src/` and are excluded from sdist/wheel in `pyproject.toml`. Check
 this whenever adding new data files.
 
+**Test fixture hosting — small vs large**: small, synthetic fixtures
+(e.g. a small CSV or `.npy`) are committed directly into `tests/data/`,
+same as any other tracked file. If a fixture becomes too large or
+binary-heavy for git (real camera captures, multi-MB reference
+datasets, anything that would bloat clone size), do not commit it —
+host it externally and fetch it with `download_data_fixtures.sh` at
+the repo root. Prefer a **GitHub Release asset on this repo** over a
+public third-party share link (Dropbox, Google Drive, etc.): a Release
+asset's access follows the repo's own visibility/permissions, whereas
+a public share link is exposed to anyone who ever obtains the URL,
+indefinitely, independent of repo access. Whichever mechanism is used,
+document the fixture's provenance next to it — e.g. the script that
+generated it (see `tests/data/peaks_49x50.m` for the pattern).
+
 **Optional extras** — `pip install om4mtools-python` alone must only
 pull in `core` plus its direct dependencies (numpy, scipy, OpenCV):
 

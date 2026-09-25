@@ -1,4 +1,4 @@
-"""Shared type aliases for fringe-pattern data."""
+"""Shared type aliases for om4mtools."""
 
 from typing import Any
 

@@ -4,9 +4,11 @@ from .demodulator_PSA4 import DemodulatorPSA4
 
 
 class DemodulatorFactory:
-    def create(demodulator_type: DemodulatorTypes, **kwargs ) -> Demodulator
+    """static factory for instantiation of demodulators"""
+    @staticmethod
+    def create(demodulator_type: DemodulatorTypes, **kwargs ) -> Demodulator :
         if demodulator_type == DemodulatorTypes.PSA4:
-            return(DemodulatorPSA4)
+            return DemodulatorPSA4()
 
         else:
             raise ValueError(
