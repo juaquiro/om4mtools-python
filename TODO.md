@@ -90,6 +90,8 @@
    [GH issue #2](https://github.com/juaquiro/om4mtools-python/issues/2)
    and in CLAUDE.md's "Test fixture hosting" convention (prefer a
    GitHub Release asset, or `pooch`, over a public third-party link).
+   **Superseded (2026-09-30)** by the Pooch-bundle data model — see
+   "Test & example data migration" below; the script is retired there.
 4. ~~**Header/filename drift** — top-of-file comment still referenced
    `download_dropbox_directory.sh` instead of the actual filename.~~
    **DONE**
@@ -100,3 +102,36 @@
 6. ~~**No cleanup on failure** — `rm -f "$TEMP_ZIP"` only ran at the very
    end; a failed extraction under `set -e` would leave it behind.~~
    **DONE** — replaced with `trap 'rm -f "$TEMP_ZIP"' EXIT`.
+
+## Test & example data migration (adopted 2026-09-30)
+
+Spec: `docs/dev/test_and_example_data.md`. Summary rules: CLAUDE.md
+"Test & example data". Steps, roughly in order:
+
+1. Add `data = ["pooch>=1.8"]` extra, include `data` in `all`, add
+   `pooch` to `dev` deps and to `.binder/environment.yml`.
+2. Register the `remote_data` marker in `pyproject.toml`
+   (`[tool.pytest.ini_options] markers`), next to `smoke`.
+3. Create `tests/conftest.py`: `--run-remote-data` option, auto-skip of
+   `remote_data` tests, session fixtures `small_dir` / `heavy_dir`.
+4. Create `src/om4mtools/datasets.py` (`BUNDLES`, `fetch()`,
+   `data_dir()`, `OM4MTOOLS_DATA_DIR` override) — with type hints and
+   docstrings.
+5. Extend `tests/test_architecture.py`: `core/` must not import
+   `pooch` or `om4mtools.datasets`.
+6. Create `tools/build_data_archive.py`; confirm `tools/` is excluded
+   from sdist/wheel.
+7. Build `fringe_small_v1.zip` (and `fringe_heavy_v1.zip` if needed)
+   from `om4mtools-data/<bundle>/` outside the repo, upload to Dropbox
+   (read-only link per archive), write
+   `src/om4mtools/resources/registry.txt`; confirm it ships in the
+   wheel.
+8. Move whatever the Dropbox folder currently serves via
+   `download_data_fixtures.sh` into the bundles; keep only files within
+   the size budget in `tests/data/`.
+9. Add data cache + `--run-remote-data` to
+   `.github/workflows/full-suite.yml`; `smoke.yml` unchanged.
+10. Retire `download_data_fixtures.sh` (and close
+    [GH issue #2](https://github.com/juaquiro/om4mtools-python/issues/2)).
+11. Later: migrate hosting to Zenodo (`load_registry_from_doi()`),
+    delete `registry.txt`.

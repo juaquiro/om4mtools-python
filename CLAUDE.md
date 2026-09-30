@@ -29,7 +29,9 @@ Python library for fringe-pattern processing (OM4M group).
 
 **`core/` never imports from `cli/`, `gui/`, or `web/`.** Interfaces
 depend on core; core never depends on interfaces. `core/` must have
-zero imports of Qt/PyQt, Typer, or FastAPI.
+zero imports of Qt/PyQt, Typer, or FastAPI — nor of `pooch` or
+`om4mtools.datasets` (core takes arrays; loading data is someone
+else's job).
 
 This is enforced by `tests/test_architecture.py` (an AST/import-graph
 scan), not just convention — treat a violation there as a build
@@ -42,7 +44,10 @@ break, not a lint warning. Run it before considering any change to
 src/om4mtools/
 ├── core/          # pure algorithms, no I/O deps — Demodulator, Unwrapper,
 │                  #   PathFollower, DisplayProjector
-├── resources/     # SHIPPED — icons, default schemas
+├── datasets.py    # [planned] ONLY place that knows data hosts/archives —
+│                  #   fetch(), data_dir(); package level, never in core/
+├── resources/     # SHIPPED — icons, default schemas,
+│                  #   [planned, interim] registry.txt (archive hash + URL)
 ├── cli/           # tool-oriented (mirrors gui/), not one-per-class
 │   └── <tool>/
 │       ├── runner.py   # plain function(s), notebook-callable, no argparse/Typer
@@ -57,7 +62,9 @@ tests/
 ├── test_architecture.py   # import-graph check — core/ stays clean
 ├── unit/                  # core/ only — this is the `smoke` subset
 ├── integration/           # test_cli/, test_web, test_gui/
-└── data/                  # small synthetic fixtures, not shipped
+├── conftest.py            # [planned] --run-remote-data, small_dir/heavy_dir fixtures
+└── data/                  # tiny committed fixtures only (size budget), not shipped
+tools/                     # [planned] dev-only scripts, e.g. build_data_archive.py
 benchmarks/                # asv perf regression suite for core/
 .binder/                   # env spec so examples/notebooks/ run on Binder
 docs/                      # Sphinx source — conf.py, index.md, api/, guide/
@@ -83,20 +90,6 @@ this and reintroduce `io/` at that point.
 `src/` and are excluded from sdist/wheel in `pyproject.toml`. Check
 this whenever adding new data files.
 
-**Test fixture hosting — small vs large**: small, synthetic fixtures
-(e.g. a small CSV or `.npy`) are committed directly into `tests/data/`,
-same as any other tracked file. If a fixture becomes too large or
-binary-heavy for git (real camera captures, multi-MB reference
-datasets, anything that would bloat clone size), do not commit it —
-host it externally and fetch it with `download_data_fixtures.sh` at
-the repo root. Prefer a **GitHub Release asset on this repo** over a
-public third-party share link (Dropbox, Google Drive, etc.): a Release
-asset's access follows the repo's own visibility/permissions, whereas
-a public share link is exposed to anyone who ever obtains the URL,
-indefinitely, independent of repo access. Whichever mechanism is used,
-document the fixture's provenance next to it — e.g. the script that
-generated it (see `tests/data/peaks_49x50.m` for the pattern).
-
 **Optional extras** — `pip install om4mtools-python` alone must only
 pull in `core` plus its direct dependencies (numpy, scipy, OpenCV):
 
@@ -105,11 +98,70 @@ pull in `core` plus its direct dependencies (numpy, scipy, OpenCV):
 gui = ["PyQt6", "pyqtgraph"]
 web = ["fastapi", "uvicorn"]
 cli = ["typer", "rich"]
-all = ["om4mtools-python[gui,web,cli]"]
+data = ["pooch>=1.8"]          # [planned] om4mtools.datasets; also in dev deps
+all = ["om4mtools-python[gui,web,cli,data]"]
 ```
 
 Never add a GUI/CLI/web dependency to the base `[project.dependencies]`
 — it belongs in the matching extra.
+
+## Test & example data
+
+Full spec: **`docs/dev/test_and_example_data.md`** — read it before
+touching test data, `datasets.py`, `registry.txt`, `conftest.py`, the
+data CI steps, or example data loading. Status (2026-09-30): **adopted,
+not yet implemented** — implementation steps are in `TODO.md`. Until
+`datasets.py` lands, the legacy `download_data_fixtures.sh` still
+exists; don't extend it, it gets retired.
+
+The model in brief:
+
+- **Large binaries never live in git.** Heavy data goes into a few
+  **versioned zip bundles** (`small` → `fringe_small_vN.zip`, `heavy` →
+  `fringe_heavy_vN.zip`), files at the zip root, fetched on demand by
+  `om4mtools.datasets` (Pooch), each pinned by a sha256 hash, cached in
+  `pooch.os_cache("om4mtools")` (override: `OM4MTOOLS_DATA_DIR`).
+- **Hosting:** interim = Dropbox, one read-only link per *archive*
+  (never a folder link — Dropbox re-zips folders, hash isn't stable),
+  listed in `src/om4mtools/resources/registry.txt`. Target = Zenodo,
+  registry read from the DOI; only `datasets.py` changes on migration.
+  Not used: Git LFS, DVC.
+- **Published archives are immutable.** Any data change → new archive
+  name (`_v2`, …), registered in the same commit that needs it. Bundle
+  sources live outside the repo (`om4mtools-data/<bundle>/`) and are
+  built with `tools/build_data_archive.py`.
+- **Test tiers:** `smoke` (offline, synthetic or tiny `tests/data/`
+  files; `develop` gate) → regular unmarked (offline) →
+  `@pytest.mark.remote_data` (uses bundles; skipped unless
+  `--run-remote-data`; runs in `full-suite` on `main` with a cached
+  data dir).
+- **Synthetic first**: prefer generated fringes with known ground truth
+  (`I = a + b·cos(φ)`) over real scans; real scans are for
+  regression/realism.
+- **`tests/data/` size budget:** ≤ 500 kB per file, ≤ 5 MB total.
+  Document each fixture's provenance next to it (see
+  `tests/data/peaks_49x50.m`).
+
+Hard rules for agents:
+
+- Never commit a binary > 500 kB or break the `tests/data/` /
+  `examples/data/` budget — propose adding it to a bundle instead.
+- Never hardcode dataset URLs, hashes, or archive names outside
+  `datasets.py` / `registry.txt`.
+- A test is never both `smoke` and `remote_data`; `smoke` tests never
+  touch the network or a bundle.
+- Tests reach bundles only through the session fixtures `small_dir` /
+  `heavy_dir` + `parametrize` over file names — no per-file fixtures, no
+  direct `fetch()`/`pooch` calls in tests.
+- Examples/notebooks load data via `om4mtools.datasets.fetch` /
+  `data_dir` — no hardcoded URLs or absolute local paths.
+- `core/` never imports `pooch` or `om4mtools.datasets` (enforced by
+  `tests/test_architecture.py` alongside the Qt/Typer/FastAPI rule —
+  add the `pooch`/`datasets` check there when `datasets.py` lands).
+- Never edit a hash in `registry.txt` to make a failing download pass —
+  a mismatch means the upstream archive changed; investigate and report.
+- Never modify/overwrite a published archive, and never rebuild one
+  after publishing (rebuilding changes the hash).
 
 ## Coding style (PEP 8)
 
@@ -159,7 +211,10 @@ PR from `develop` or a `hotfix/*` branch).
 
 When adding tests for `core/`, mark fast, dependency-free ones
 `@pytest.mark.smoke` so they run in the `develop` gate; integration
-tests under `cli`/`gui`/`web` stay out of `smoke`.
+tests under `cli`/`gui`/`web` stay out of `smoke`. Tests that need
+downloaded bundles are `@pytest.mark.remote_data` instead — they only
+run in `full-suite` (`pytest --cov --run-remote-data`) or locally with
+`--run-remote-data`. See "Test & example data".
 
 ## Documentation (Sphinx)
 
@@ -273,3 +328,7 @@ params object. Do not add this forwarding to `Demodulator` or any other core cla
    (bootstrap) split.
 5. If you added shippable data, confirm it's under
    `src/om4mtools/resources/`, not `examples/` or `tests/data/`.
+6. If you added or changed test/example data, confirm the
+   `tests/data/` size budget (≤ 500 kB/file, ≤ 5 MB total), that no
+   URL/hash/archive name lives outside `datasets.py`/`registry.txt`,
+   and that `remote_data` tests pass with `pytest --run-remote-data`.

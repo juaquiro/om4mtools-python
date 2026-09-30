@@ -39,9 +39,15 @@ See [CLAUDE.md](CLAUDE.md) for the full set of project conventions
 pip install -e ".[dev]"
 pytest -m smoke --no-cov   # fast core/ tests — the develop PR gate
 pytest --cov               # full suite — the main PR gate
+pytest --run-remote-data   # also run tests that download data bundles
 ruff check .
 black --check .
 ```
+
+Large test/example data is not in git: it's fetched on demand from
+versioned bundles via `om4mtools.datasets` — see
+[docs/dev/test_and_example_data.md](docs/dev/test_and_example_data.md)
+(adopted, implementation in progress).
 
 ### Branching
 
