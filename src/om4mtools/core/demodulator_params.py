@@ -1,6 +1,9 @@
 from dataclasses import dataclass
 from typing import Any
-from .types import ComplexArray
+
+import numpy as np
+
+from .types import BoolArray, ComplexArray
 
 
 @dataclass(slots=True)
@@ -26,11 +29,13 @@ class DemodParams:
     ValueError: delta_list has 5 entries, but n_igrams is 6
     """
 
-    roi_mask: Any = None
-    z_list: tuple[ComplexArray, ...] | None = None 
-    n_igrams: int | None = None
-    roi_norm_th: float = 0.15
-    delta_list: tuple[float, ...] | None = None
+    roi_mask: BoolArray | None = None  # roi mask
+    z_list: tuple[ComplexArray, ...] | None = None  # list of demodulation results
+    n_igrams: int | None = None  # number of igrams
+    roi_norm_th: float = 0.15  # threshold used to generate roi_mask from phasor modulation
+    delta_list: tuple[float, ...] | None = (
+        None  # rad. values in rads for the demodulator phase steps
+    )
 
     def __setattr__(self, name: str, value: Any) -> None:
         value = self._validate(name, value)
@@ -44,6 +49,10 @@ class DemodParams:
             if not 0.0 <= value <= 1:
                 raise ValueError("roi_norm_th must be in [0, 1]")
         elif name == "n_igrams":
+            # bool is a subclass of int, so reject it explicitly
+            if isinstance(value, bool) or not isinstance(value, (int, np.integer)):
+                raise TypeError(f"n_igrams must be an int, got {type(value).__name__}")
+            value = int(value)
             if value < 1:
                 raise ValueError("n_igrams must be at least 1")
         elif name == "delta_list":
@@ -51,6 +60,15 @@ class DemodParams:
                 value = tuple(float(x) for x in value)
             except (TypeError, ValueError) as e:
                 raise TypeError("delta_list must be a sequence of numbers") from e
+        elif name == "roi_mask":
+            if not isinstance(value, np.ndarray):
+                raise TypeError(f"roi_mask must be a numpy array, got {type(value).__name__}")
+            if value.dtype != np.bool:
+                raise TypeError(f"roi_mask must be a boolean array, got dtype {value.dtype}")
+            if value.ndim not in (2, 3):
+                raise ValueError(f"roi_mask must be 2D or 3D, got {value.ndim}D")
+            value = value.copy()
+
         return value
 
     def verify_params(self) -> None:
@@ -61,6 +79,5 @@ class DemodParams:
             raise ValueError("delta_list must be set")
         if len(self.delta_list) != self.n_igrams:
             raise ValueError(
-                f"delta_list has {len(self.delta_list)} entries, "
-                f"but n_igrams is {self.n_igrams}"
+                f"delta_list has {len(self.delta_list)} entries, but n_igrams is {self.n_igrams}"
             )

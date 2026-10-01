@@ -1,20 +1,15 @@
 from .demodulator import Demodulator
-from .demodulator_types import DemodulatorTypes
 from .demodulator_PSA4 import DemodulatorPSA4
+from .demodulator_types import DemodulatorTypes
 
 
 class DemodulatorFactory:
     """static factory for instantiation of demodulators"""
+
     @staticmethod
-    def create(demodulator_type: DemodulatorTypes, **kwargs ) -> Demodulator :
+    def create(demodulator_type: DemodulatorTypes, **kwargs) -> Demodulator:
         if demodulator_type == DemodulatorTypes.PSA4:
             return DemodulatorPSA4()
 
         else:
-            raise ValueError(
-                f"Unknown demodulator type: {demodulator_type}"
-            )
-
-
-
-
+            raise ValueError(f"Unknown demodulator type: {demodulator_type}")

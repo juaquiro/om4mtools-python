@@ -194,7 +194,9 @@ import pytest
 
 def pytest_addoption(parser):
     parser.addoption(
-        "--run-remote-data", action="store_true", default=False,
+        "--run-remote-data",
+        action="store_true",
+        default=False,
         help="run tests that download dataset bundles",
     )
 
@@ -216,12 +218,14 @@ def pytest_collection_modifyitems(config, items):
 @pytest.fixture(scope="session")
 def small_dir():
     from om4mtools.datasets import data_dir
+
     return data_dir("small")
 
 
 @pytest.fixture(scope="session")
 def heavy_dir():
     from om4mtools.datasets import data_dir
+
     return data_dir("heavy")
 ```
 

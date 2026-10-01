@@ -7,6 +7,7 @@ import pytest
 
 from om4mtools.core.demodulator_PSA4 import DemodulatorPSA4
 
+
 @pytest.fixture
 def synthetic_igrams_8x9() -> tuple[list[np.ndarray], float, np.ndarray]:
     """Generate 4 synthetic 8x9 PSA4 interferograms with a known phase.
@@ -43,7 +44,8 @@ def synthetic_igrams_8x9() -> tuple[list[np.ndarray], float, np.ndarray]:
 
 @pytest.mark.smoke
 def test_process_recovers_known_phasor(
-    synthetic_igrams_8x9: tuple[list[np.ndarray], float, np.ndarray], ) -> None:
+    synthetic_igrams_8x9: tuple[list[np.ndarray], float, np.ndarray],
+) -> None:
     """DemodulatorPSA4.process() recovers the expected 2*b*exp(j*phi) phasor.
 
     Run:
@@ -52,7 +54,11 @@ def test_process_recovers_known_phasor(
     igrams, b, phi = synthetic_igrams_8x9
     demod = DemodulatorPSA4()
 
+    np.testing.assert_equal(demod.demod_params.roi_mask, None)
+
     demod.process(igrams)
+
+    np.testing.assert_equal(demod.demod_params.roi_mask, True)
 
     assert demod.demod_params.z_list is not None
     (z,) = demod.demod_params.z_list

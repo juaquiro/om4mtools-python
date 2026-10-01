@@ -1,5 +1,5 @@
 """Internal shared plumbing for core/.
- 
+
 Holds math helpers and algorithm-level building blocks used by other
 core/ modules (Demodulator subclasses, Unwrapper, utils.py's public
 functions, ...). Nothing here is part of the public API: signatures
@@ -10,19 +10,19 @@ callable by users, move it to utils.py instead.
 
 from .types import ComplexArray, RealArray
 
- 
+
 def vortex_transform(igram: RealArray) -> ComplexArray:
     """Compute the vortex transform of a fringe pattern.
- 
+
     Used internally as a building block by spatial-carrier
     demodulation methods (e.g. single-pattern demodulators that
     estimate the local phase via an isotropic quadrature operator).
- 
+
     Parameters
     ----------
     image : RealArray
         Input fringe pattern.
- 
+
     Returns
     -------
     ComplexArray
@@ -32,8 +32,8 @@ def vortex_transform(igram: RealArray) -> ComplexArray:
     # public/private module boundary in place before the algorithm
     # itself is written.
     raise NotImplementedError
- 
- 
+
+
 def normalize(igram: RealArray) -> RealArray:
     r"""Normalize an interferogram to unit background and modulation.
 
@@ -48,7 +48,7 @@ def normalize(igram: RealArray) -> RealArray:
     normalization computes
 
     .. math::
-        g_n = \cos(\phi) 
+        g_n = \cos(\phi)
 
     i.e. the interferogram with :math:`b = 0` and :math:`m = 1`.
 
@@ -62,8 +62,5 @@ def normalize(igram: RealArray) -> RealArray:
     RealArray
         The normalized interferogram :math:`g_n = \cos(\phi)`.
     """
-    
+
     raise NotImplementedError
-
-
-

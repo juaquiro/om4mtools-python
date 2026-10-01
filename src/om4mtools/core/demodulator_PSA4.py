@@ -6,6 +6,7 @@ import numpy as np
 from .demodulator import Demodulator
 from .types import RealArray
 
+
 class DemodulatorPSA4(Demodulator):
     r"""4-step least-squares phase-shifting algorithm (A.4.1 of [1]).
 
@@ -46,10 +47,10 @@ class DemodulatorPSA4(Demodulator):
     def process(self, igram_list: Sequence[RealArray]) -> None:
         r"""
         4 step method as described in A.4.1 4-step least-squares PSA of [1]
-        PSA4 is a special case of a 4 step equispaced PSA with 
-        :math:`\delta_n = \omega_0 n` for :math:`n = 0, 1, 2, 3`, 
+        PSA4 is a special case of a 4 step equispaced PSA with
+        :math:`\delta_n = \omega_0 n` for :math:`n = 0, 1, 2, 3`,
         with :math:`\omega_0 = \pi/2`
-        
+
         References
         ----------
         .. [1] Servin, M., Quiroga, J. A., and Padilla, M., "Fringe Pattern
@@ -65,13 +66,20 @@ class DemodulatorPSA4(Demodulator):
                 f"fringe patterns, got {len(igram_list)}"
             )
 
-        
         igrams = [np.asarray(ig, dtype=np.float64) for ig in igram_list]
+
+        roi_mask = self.demod_params.roi_mask
+        if roi_mask is None:
+            roi_mask = np.ones(igrams[0].shape, dtype=bool)
 
         i0, i1, i2, i3 = igrams
 
-        z= i0 - i2 + 1j*(i3 - i1)
+        z = i0 - i2 + 1j * (i3 - i1)
+        z[~roi_mask] = np.nan
 
-        self.demod_params.z_list = (z,)  # complex phasor tuple, trailing comma matters — this is a 1-tuple
-        
-    
+        self.demod_params.z_list = (
+            z,
+        )  # complex phasor tuple, trailing comma matters — this is a 1-tuple
+        self.demod_params.roi_mask = (
+            roi_mask  # future call to the same object wull have a changes roi_mask
+        )

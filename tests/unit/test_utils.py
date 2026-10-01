@@ -1,10 +1,8 @@
-
-
 """Tests for `om4mtools.core.utils`."""
 
 from __future__ import annotations
-from pathlib import Path
 
+from pathlib import Path
 
 import numpy as np
 import pytest
@@ -13,6 +11,7 @@ from om4mtools.core.utils import peaks
 
 DATA_DIR = Path(__file__).resolve().parents[1] / "data"
 PEAKS_CSV = DATA_DIR / "peaks_49x50.csv"
+
 
 @pytest.fixture
 def matlab_reference_peaks_49x50() -> np.ndarray:
@@ -56,9 +55,3 @@ def test_peaks_matches_matlab_ref(matlab_reference_peaks_49x50: np.ndarray) -> N
     assert z.shape == (49, 50)
 
     np.testing.assert_allclose(z, matlab_reference_peaks_49x50, rtol=1e-6, atol=1e-9)
-
-
-
-
-
-    

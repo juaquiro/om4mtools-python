@@ -235,9 +235,9 @@ docs/
 extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.autosummary",
-    "sphinx.ext.napoleon",   # NumPy/Google-style docstrings
-    "myst_parser",           # write guide pages in Markdown, not .rst
-    "nbsphinx",              # render examples/notebooks/ directly
+    "sphinx.ext.napoleon",  # NumPy/Google-style docstrings
+    "myst_parser",  # write guide pages in Markdown, not .rst
+    "nbsphinx",  # render examples/notebooks/ directly
 ]
 autosummary_generate = True
 html_theme = "pydata_sphinx_theme"
@@ -285,8 +285,8 @@ import numpy.typing as npt
 import numpy as np
 from typing import Any
 
-FloatArray   = npt.NDArray[np.floating[Any]]                   # float32, float64, …
-RealArray    = npt.NDArray[np.integer[Any] | np.floating[Any]] # uint8, uint16, float64, …
+FloatArray = npt.NDArray[np.floating[Any]]  # float32, float64, …
+RealArray = npt.NDArray[np.integer[Any] | np.floating[Any]]  # uint8, uint16, float64, …
 ComplexArray = npt.NDArray[np.complex128]
 ```
 
