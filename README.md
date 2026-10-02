@@ -58,6 +58,31 @@ versioned bundles via `om4mtools.datasets` — see
   gated on the `full-suite` check. Bump the version in `pyproject.toml` as
   part of the release PR.
 
+### Editor settings (VS Code)
+
+Settings are split into three layers — keep each thing in its layer:
+
+| Layer | Where | What goes there |
+|---|---|---|
+| **Rules** (source of truth) | `pyproject.toml` (`[tool.ruff]`) | Line length, lint rule selection. Used by the CLI, CI, and every editor. |
+| **Workspace** (shared, committed) | `.vscode/settings.json`, `.vscode/extensions.json` | Editor wiring only: Ruff as formatter, format/fix/sort imports on save; recommended extensions. |
+| **User** (personal, not committed) | VS Code User settings (`Ctrl+Shift+P` → *Preferences: Open User Settings (JSON)*) | Theme, fonts, auto-save, environment manager (conda/venv/uv), interpreter paths. |
+
+Rules for the committed workspace files:
+
+- No lint/format rules — they live in `pyproject.toml` only, so there's a
+  single source of truth.
+- No absolute paths, interpreter paths, or personal preferences.
+- Only `settings.json` and `extensions.json` are tracked; everything else in
+  `.vscode/` is git-ignored (`.vscode/*` + `!` exceptions in `.gitignore`).
+
+To share personal settings across your own machines, use VS Code
+**Settings Sync** (with the *Settings* category enabled), not git.
+
+Format-on-save does not run on delayed auto-save (`files.autoSave:
+"afterDelay"`); save explicitly or use `"onFocusChange"`. CI/`ruff` remains
+the actual enforcement — editor settings are a convenience.
+
 ## License
 
 BSD 3-Clause — see [LICENSE](LICENSE).
