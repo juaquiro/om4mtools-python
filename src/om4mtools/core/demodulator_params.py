@@ -46,6 +46,16 @@ class DemodParams:
         if value is None:
             return value
         if name == "roi_norm_th":
+            if isinstance(value, bool) or not isinstance(
+                value, (int, float, np.integer, np.floating)
+            ):
+                raise TypeError(
+                    "roi_norm_th must be an int, float, np.integer or np.floating, got"
+                    f" {type(value).__name__}"
+                )
+
+            value = float(value)
+
             if not 0.0 <= value <= 1:
                 raise ValueError("roi_norm_th must be in [0, 1]")
         elif name == "n_igrams":

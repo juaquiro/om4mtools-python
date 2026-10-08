@@ -169,9 +169,11 @@ Pending:
    the floor to `numpy>=2.0`.~~
    **DONE** — raised the floor to `numpy>=2.0`; `np.bool` is the canonical
    name there, so the code is unchanged.
-3. **[#4](https://github.com/juaquiro/om4mtools-python/issues/4)
+3. ~~**[#4](https://github.com/juaquiro/om4mtools-python/issues/4)
    `roi_norm_th`** — non-numeric values give Python's raw comparison
-   error; add a type check (and maybe store it as `float`).
+   error; add a type check (and maybe store it as `float`).~~
+   **DONE** — type check (bools rejected), stored as `float`; tests
+   `test_roi_norm_th_type` and `test_roi_norm_th_normalized_to_float`.
 4. **[#5](https://github.com/juaquiro/om4mtools-python/issues/5) `None`
    accepted for every field** — decide which fields can be `None`
    (`roi_norm_th` has a real default and shouldn't be).
