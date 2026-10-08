@@ -158,14 +158,17 @@ extension (installed, with `settings.json` updated). It uses the
 
 Pending:
 
-1. **Commit** the work above. Put `Fixes #3` in the message
+1. ~~**Commit** the work above. Put `Fixes #3` in the message
    ([#3](https://github.com/juaquiro/om4mtools-python/issues/3)). Run
-   `ruff check` + `ruff format --check` first.
-2. **[#6](https://github.com/juaquiro/om4mtools-python/issues/6) `np.bool`
+   `ruff check` + `ruff format --check` first.~~
+   **DONE** — commit `2dd1c16`, #3 closed.
+2. ~~**[#6](https://github.com/juaquiro/om4mtools-python/issues/6) `np.bool`
    breaks on NumPy < 2.0** (`pyproject.toml` allows `numpy>=1.24`). Used in
    **two** places: `demodulator_params.py` (`roi_mask` dtype check) and
    `types.py` (`BoolArray = npt.NDArray[np.bool]`). Use `np.bool_`, or raise
-   the floor to `numpy>=2.0`.
+   the floor to `numpy>=2.0`.~~
+   **DONE** — raised the floor to `numpy>=2.0`; `np.bool` is the canonical
+   name there, so the code is unchanged.
 3. **[#4](https://github.com/juaquiro/om4mtools-python/issues/4)
    `roi_norm_th`** — non-numeric values give Python's raw comparison
    error; add a type check (and maybe store it as `float`).
