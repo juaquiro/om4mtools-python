@@ -130,3 +130,20 @@ def test_process_twice_with_different_shapes(
     assert demod.demod_params.out_roi_mask.shape == (5, 6)
     (z,) = demod.demod_params.z_list
     assert z.shape == (5, 6)
+
+
+@pytest.mark.smoke
+def test_process_roi_mask_shape_mismatch_raises(
+    synthetic_igrams_8x9: tuple[list[np.ndarray], float, np.ndarray],
+) -> None:
+    """An `inp_roi_mask` whose shape differs from the igrams raises `ValueError`.
+
+    Run:
+        pytest tests/unit/test_demodulator_psa4.py::test_process_roi_mask_shape_mismatch_raises -v
+    """
+    igrams, _, _ = synthetic_igrams_8x9
+    demod = DemodulatorPSA4()
+    demod.demod_params.inp_roi_mask = np.ones((5, 6), dtype=bool)
+
+    with pytest.raises(ValueError, match=r"inp_roi_mask has shape \(5, 6\)"):
+        demod.process(igrams)

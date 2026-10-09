@@ -192,11 +192,16 @@ Pending:
    **DONE** — split into input and output: `roi_mask` renamed to
    `inp_roi_mask` (input, never written by `process()`), new output field
    `out_roi_mask` (the mask actually used), validated the same way.
-6. **`inp_roi_mask` vs igram shape check** — when the user passes a mask,
+6. ~~**`inp_roi_mask` vs igram shape check** — when the user passes a mask,
    nothing checks that `inp_roi_mask.shape == igrams[0].shape`. Idea: give
    `verify_params(igram_shape=...)` an optional argument (keeps validation
    in `*Params`, per CLAUDE.md) and call it after the `np.asarray`
-   conversion in `process()`.
+   conversion in `process()`.~~
+   **DONE** — checked directly in `DemodulatorPSA4.process()` (simpler than
+   the `verify_params(igram_shape=...)` idea); raises `ValueError` naming
+   both shapes. CLAUDE.md "Design decisions" now allows data-dependent
+   checks in `process()` as an exception to the `*Params` validation rule.
+   Test: `test_process_roi_mask_shape_mismatch_raises`.
 7. **Document "parameters stored by value"** in CLAUDE.md "Design
    decisions": `*Params` copy mutable inputs in `_validate()`, sequences
    become tuples, scalars need no copy, data passed to `process()` is not

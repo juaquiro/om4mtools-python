@@ -67,10 +67,16 @@ class DemodulatorPSA4(Demodulator):
             )
 
         igrams = [np.asarray(ig, dtype=np.float64) for ig in igram_list]
+        igram_shape = igrams[0].shape
 
         roi_mask = self.demod_params.inp_roi_mask
         if roi_mask is None:
-            roi_mask = np.ones(igrams[0].shape, dtype=bool)
+            roi_mask = np.ones(igram_shape, dtype=bool)
+        elif roi_mask.shape != igram_shape:
+            raise ValueError(
+                f"inp_roi_mask has shape {roi_mask.shape}, but "
+                f"the fringe patterns have shape {igram_shape}"
+            )
 
         i0, i1, i2, i3 = igrams
 

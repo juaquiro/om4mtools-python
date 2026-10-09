@@ -278,6 +278,13 @@ classes), never to the core class itself.** Two levels:
 `Demodulator` (and other core classes) must not duplicate or shadow this logic.
 If a new validation rule is needed, it goes in `*Params`, not in the core class.
 
+**Exception — checks against the input data.** `*Params` never sees the arrays
+passed to `process()`, so checks that compare a parameter with that data (e.g.
+`inp_roi_mask.shape` vs. the igram shape) live in `process()` itself, right
+where the data is used, and raise `ValueError` with a message naming the
+parameter (e.g. `inp_roi_mask has shape (5, 6), but the igrams are (8, 9)`).
+Don't pass data or data-derived arguments into `verify_params()` for this.
+
 **Type aliases for NumPy arrays** — defined once and reused across `core/`:
 
 ```python
