@@ -257,20 +257,22 @@ creation, so a typo like `p.n_intgrams = 5` (instead of `p.n_integrams`) raises
 silently ignored. Always use `slots=True` on parameter/config dataclasses.
 
 **`DemodParams.delta_list` is typed as `tuple` (variable-length), not `list`.**
-Tuples are immutable, so once a `DemodParams` is constructed the sequence of
-phase shifts cannot be modified in-place — a caller must create a new
-`DemodParams` to change it. This is intentional: it prevents accidental
-mid-run mutation. The contents of `delta_list` (length, value ranges, etc.)
-are validated by `_validate()` at construction time. Any future sequence-valued
+Tuples are immutable, so the sequence of phase shifts cannot be modified
+in-place — a caller must assign a new sequence to change it (which goes through
+validation again). This is intentional: it prevents accidental mid-run
+mutation. The contents of `delta_list` (length, value ranges, etc.) are
+validated by `_validate()` on every assignment. Any future sequence-valued
 field in a `*Params` class should follow the same pattern unless mutability is
 explicitly required.
 
 **All parameter validation is delegated to `DemodParams` (and equivalent `*Params`
 classes), never to the core class itself.** Two levels:
 
-- `_validate()` — called from `__post_init__`; validates each field individually
-  at construction time, and normalizes field values when needed (e.g. converting
-  an acceptable input form into the canonical internal representation).
+- `_validate()` — called from `__setattr__`, so it runs for every field both at
+  construction (the dataclass `__init__` assigns through `__setattr__`) and on
+  every later assignment; validates each field individually and normalizes
+  field values when needed (e.g. converting an acceptable input form into the
+  canonical internal representation).
 - `verify_params()` — called by `Demodulator.process()` (and equivalent entry
   points) just before execution; checks cross-field constraints and
   algorithm-level preconditions.
@@ -282,8 +284,22 @@ If a new validation rule is needed, it goes in `*Params`, not in the core class.
 passed to `process()`, so checks that compare a parameter with that data (e.g.
 `inp_roi_mask.shape` vs. the igram shape) live in `process()` itself, right
 where the data is used, and raise `ValueError` with a message naming the
-parameter (e.g. `inp_roi_mask has shape (5, 6), but the igrams are (8, 9)`).
-Don't pass data or data-derived arguments into `verify_params()` for this.
+parameter (e.g. `inp_roi_mask has shape (5, 6), but the fringe patterns have
+shape (8, 9)`). Don't pass data or data-derived arguments into
+`verify_params()` for this.
+
+**`*Params` store parameters by value.** `_validate()` copies or converts
+mutable inputs, so changing the caller's object afterwards never changes the
+params (and vice versa):
+
+- NumPy arrays (e.g. `inp_roi_mask`, `out_roi_mask`) are stored as a copy
+  (`value.copy()`). The copy stays **writable**; don't make it read-only.
+- Sequences are converted to tuples (e.g. `delta_list`, see above).
+- Scalars are immutable and need no copy; they're only normalized (e.g.
+  `float(value)`).
+- Data passed to `process()` (the igrams) is **not** copied — it isn't a
+  parameter, and copying full image stacks would be wasteful. In exchange,
+  `process()` must never modify its input arrays in place.
 
 **Type aliases for NumPy arrays** — defined once and reused across `core/`:
 

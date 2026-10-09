@@ -202,11 +202,14 @@ Pending:
    both shapes. CLAUDE.md "Design decisions" now allows data-dependent
    checks in `process()` as an exception to the `*Params` validation rule.
    Test: `test_process_roi_mask_shape_mismatch_raises`.
-7. **Document "parameters stored by value"** in CLAUDE.md "Design
+7. ~~**Document "parameters stored by value"** in CLAUDE.md "Design
    decisions": `*Params` copy mutable inputs in `_validate()`, sequences
    become tuples, scalars need no copy, data passed to `process()` is not
    copied. Arrays are kept **writable**, not read-only, which was decided
-   for `inp_roi_mask` / `out_roi_mask`.
+   for `inp_roi_mask` / `out_roi_mask`.~~
+   **DONE** — new "`*Params` store parameters by value" paragraph in
+   CLAUDE.md "Design decisions". Also fixed: `_validate()` is called from
+   `__setattr__` (construction + every assignment), not `__post_init__`.
 8. ~~**Tests for the new PSA4 `roi_mask` behavior** — the default
    all-`True` mask, NaN outside the ROI, and (once item 5 is decided) what
    happens to `demod_params.roi_mask` after `process()`.~~
