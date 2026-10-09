@@ -182,15 +182,18 @@ Pending:
    (e.g. Otsu). The meaning of `None` for each field is in the
    `DemodParams` docstring. Implementing the automatic threshold is
    tracked in [#8](https://github.com/juaquiro/om4mtools-python/issues/8).
-5. **Decide: should `process()` overwrite `demod_params.roi_mask`?**
+5. ~~**Decide: should `process()` overwrite `demod_params.roi_mask`?**
    `DemodulatorPSA4.process` currently writes the effective mask back to
    `self.demod_params.roi_mask`. Discussed downsides: a second `process()`
    call starts from the previous mask, not the user's (not repeatable), and
    it breaks if the next igrams have a different shape. Alternative
    discussed: keep `roi_mask` as input only and store the result in an
-   output field (e.g. `roi_mask_out`), like `z_list`.
-6. **`roi_mask` vs igram shape check** — when the user passes a mask,
-   nothing checks that `roi_mask.shape == igrams[0].shape`. Idea: give
+   output field (e.g. `roi_mask_out`), like `z_list`.~~
+   **DONE** — split into input and output: `roi_mask` renamed to
+   `inp_roi_mask` (input, never written by `process()`), new output field
+   `out_roi_mask` (the mask actually used), validated the same way.
+6. **`inp_roi_mask` vs igram shape check** — when the user passes a mask,
+   nothing checks that `inp_roi_mask.shape == igrams[0].shape`. Idea: give
    `verify_params(igram_shape=...)` an optional argument (keeps validation
    in `*Params`, per CLAUDE.md) and call it after the `np.asarray`
    conversion in `process()`.
@@ -198,7 +201,10 @@ Pending:
    decisions": `*Params` copy mutable inputs in `_validate()`, sequences
    become tuples, scalars need no copy, data passed to `process()` is not
    copied. Arrays are kept **writable**, not read-only, which was decided
-   for `roi_mask`.
-8. **Tests for the new PSA4 `roi_mask` behavior** — the default
+   for `inp_roi_mask` / `out_roi_mask`.
+8. ~~**Tests for the new PSA4 `roi_mask` behavior** — the default
    all-`True` mask, NaN outside the ROI, and (once item 5 is decided) what
-   happens to `demod_params.roi_mask` after `process()`.
+   happens to `demod_params.roi_mask` after `process()`.~~
+   **DONE** — `test_process_default_roi_is_whole_image`,
+   `test_process_nan_outside_roi`, `test_process_twice_with_different_shapes`
+   in `tests/unit/test_demodulator_psa4.py`.

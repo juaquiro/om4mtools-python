@@ -68,7 +68,7 @@ class DemodulatorPSA4(Demodulator):
 
         igrams = [np.asarray(ig, dtype=np.float64) for ig in igram_list]
 
-        roi_mask = self.demod_params.roi_mask
+        roi_mask = self.demod_params.inp_roi_mask
         if roi_mask is None:
             roi_mask = np.ones(igrams[0].shape, dtype=bool)
 
@@ -80,6 +80,6 @@ class DemodulatorPSA4(Demodulator):
         self.demod_params.z_list = (
             z,
         )  # complex phasor tuple, trailing comma matters — this is a 1-tuple
-        self.demod_params.roi_mask = (
-            roi_mask  # future call to the same object wull have a changes roi_mask
-        )
+        # output only: inp_roi_mask is left untouched so repeated calls start from
+        # the user's input
+        self.demod_params.out_roi_mask = roi_mask

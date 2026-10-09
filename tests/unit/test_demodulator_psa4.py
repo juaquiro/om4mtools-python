@@ -54,11 +54,7 @@ def test_process_recovers_known_phasor(
     igrams, b, phi = synthetic_igrams_8x9
     demod = DemodulatorPSA4()
 
-    np.testing.assert_equal(demod.demod_params.roi_mask, None)
-
     demod.process(igrams)
-
-    np.testing.assert_equal(demod.demod_params.roi_mask, True)
 
     assert demod.demod_params.z_list is not None
     (z,) = demod.demod_params.z_list
@@ -66,3 +62,71 @@ def test_process_recovers_known_phasor(
 
     z_expected = 2.0 * b * np.exp(1j * phi)
     np.testing.assert_allclose(z, z_expected, rtol=1e-10, atol=1e-12)
+
+
+@pytest.mark.smoke
+def test_process_default_roi_is_whole_image(
+    synthetic_igrams_8x9: tuple[list[np.ndarray], float, np.ndarray],
+) -> None:
+    """With no `inp_roi_mask`, `out_roi_mask` is all-True and the input stays None.
+
+    Run:
+        pytest tests/unit/test_demodulator_psa4.py::test_process_default_roi_is_whole_image -v
+    """
+    igrams, _, _ = synthetic_igrams_8x9
+    demod = DemodulatorPSA4()
+
+    demod.process(igrams)
+
+    assert demod.demod_params.inp_roi_mask is None
+    out_roi_mask = demod.demod_params.out_roi_mask
+    assert out_roi_mask is not None
+    assert out_roi_mask.shape == (8, 9)
+    assert out_roi_mask.all()
+    (z,) = demod.demod_params.z_list
+    assert np.isfinite(z).all()
+
+
+@pytest.mark.smoke
+def test_process_nan_outside_roi(
+    synthetic_igrams_8x9: tuple[list[np.ndarray], float, np.ndarray],
+) -> None:
+    """`z` is NaN outside `inp_roi_mask`, which `process()` does not modify.
+
+    Run:
+        pytest tests/unit/test_demodulator_psa4.py::test_process_nan_outside_roi -v
+    """
+    igrams, b, phi = synthetic_igrams_8x9
+    mask = np.zeros((8, 9), dtype=bool)
+    mask[2:6, 3:7] = True
+    demod = DemodulatorPSA4()
+    demod.demod_params.inp_roi_mask = mask
+
+    demod.process(igrams)
+
+    np.testing.assert_array_equal(demod.demod_params.inp_roi_mask, mask)
+    np.testing.assert_array_equal(demod.demod_params.out_roi_mask, mask)
+    (z,) = demod.demod_params.z_list
+    assert np.isnan(z[~mask]).all()
+    np.testing.assert_allclose(z[mask], (2.0 * b * np.exp(1j * phi))[mask], rtol=1e-10)
+
+
+@pytest.mark.smoke
+def test_process_twice_with_different_shapes(
+    synthetic_igrams_8x9: tuple[list[np.ndarray], float, np.ndarray],
+) -> None:
+    """A second `process()` call with a new igram shape builds a new default mask.
+
+    Run:
+        pytest tests/unit/test_demodulator_psa4.py::test_process_twice_with_different_shapes -v
+    """
+    igrams, _, _ = synthetic_igrams_8x9
+    demod = DemodulatorPSA4()
+
+    demod.process(igrams)
+    demod.process([ig[:5, :6] for ig in igrams])
+
+    assert demod.demod_params.inp_roi_mask is None
+    assert demod.demod_params.out_roi_mask.shape == (5, 6)
+    (z,) = demod.demod_params.z_list
+    assert z.shape == (5, 6)

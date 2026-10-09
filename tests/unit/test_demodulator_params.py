@@ -25,7 +25,8 @@ def test_default_values() -> None:
     """
     p = DemodParams()
 
-    assert p.roi_mask is None
+    assert p.inp_roi_mask is None
+    assert p.out_roi_mask is None
     assert p.z_list is None
     assert p.n_igrams is None
     assert p.roi_norm_th is None
@@ -210,81 +211,103 @@ def test_delta_list_normalized_to_tuple_of_floats() -> None:
 
 @pytest.mark.smoke
 @pytest.mark.parametrize("value", [[[True, False]], "mask", 1])
-def test_roi_mask_not_ndarray_raises(value: object) -> None:
-    """A `roi_mask` that is not a NumPy array (list, str, int) raises `TypeError`.
+def test_inp_roi_mask_not_ndarray_raises(value: object) -> None:
+    """A `inp_roi_mask` that is not a NumPy array (list, str, int) raises `TypeError`.
 
     Run::
 
-        pytest tests/unit/test_demodulator_params.py::test_roi_mask_not_ndarray_raises
+        pytest tests/unit/test_demodulator_params.py::test_inp_roi_mask_not_ndarray_raises
     """
     p = DemodParams()
 
-    with pytest.raises(TypeError, match="roi_mask must be a numpy array"):
-        p.roi_mask = value
+    with pytest.raises(TypeError, match="inp_roi_mask must be a numpy array"):
+        p.inp_roi_mask = value
 
 
 @pytest.mark.smoke
 @pytest.mark.parametrize("dtype", [np.uint8, np.int64, np.float64])
-def test_roi_mask_not_boolean_raises(dtype: type) -> None:
-    """A non-boolean `roi_mask` array (int or float dtype) raises `TypeError`.
+def test_inp_roi_mask_not_boolean_raises(dtype: type) -> None:
+    """A non-boolean `inp_roi_mask` array (int or float dtype) raises `TypeError`.
 
     Run::
 
-        pytest tests/unit/test_demodulator_params.py::test_roi_mask_not_boolean_raises
+        pytest tests/unit/test_demodulator_params.py::test_inp_roi_mask_not_boolean_raises
     """
     p = DemodParams()
 
-    with pytest.raises(TypeError, match="roi_mask must be a boolean array"):
-        p.roi_mask = np.ones((4, 4), dtype=dtype)
+    with pytest.raises(TypeError, match="inp_roi_mask must be a boolean array"):
+        p.inp_roi_mask = np.ones((4, 4), dtype=dtype)
 
 
 @pytest.mark.smoke
 @pytest.mark.parametrize("shape", [(), (4,), (2, 3, 4, 5)])
-def test_roi_mask_wrong_ndim_raises(shape: tuple[int, ...]) -> None:
-    """A `roi_mask` that is not 2D or 3D (0D, 1D, 4D) raises `ValueError`.
+def test_inp_roi_mask_wrong_ndim_raises(shape: tuple[int, ...]) -> None:
+    """A `inp_roi_mask` that is not 2D or 3D (0D, 1D, 4D) raises `ValueError`.
 
     Run::
 
-        pytest tests/unit/test_demodulator_params.py::test_roi_mask_wrong_ndim_raises
+        pytest tests/unit/test_demodulator_params.py::test_inp_roi_mask_wrong_ndim_raises
     """
     p = DemodParams()
 
-    with pytest.raises(ValueError, match="roi_mask must be 2D or 3D"):
-        p.roi_mask = np.ones(shape, dtype=bool)
+    with pytest.raises(ValueError, match="inp_roi_mask must be 2D or 3D"):
+        p.inp_roi_mask = np.ones(shape, dtype=bool)
 
 
 @pytest.mark.smoke
 @pytest.mark.parametrize("shape", [(4, 5), (4, 5, 3)])
-def test_roi_mask_2d_3d_accepted(shape: tuple[int, ...]) -> None:
-    """2D and 3D boolean `roi_mask` arrays are accepted unchanged.
+def test_inp_roi_mask_2d_3d_accepted(shape: tuple[int, ...]) -> None:
+    """2D and 3D boolean `inp_roi_mask` arrays are accepted unchanged.
 
     Run::
 
-        pytest tests/unit/test_demodulator_params.py::test_roi_mask_2d_3d_accepted
+        pytest tests/unit/test_demodulator_params.py::test_inp_roi_mask_2d_3d_accepted
     """
     p = DemodParams()
     mask = np.ones(shape, dtype=bool)
-    p.roi_mask = mask
+    p.inp_roi_mask = mask
 
-    np.testing.assert_array_equal(p.roi_mask, mask)
+    np.testing.assert_array_equal(p.inp_roi_mask, mask)
 
 
 @pytest.mark.smoke
-def test_roi_mask_stored_as_copy() -> None:
+def test_inp_roi_mask_stored_as_copy() -> None:
     """Modifying the caller's array afterwards does not affect the params.
 
     Run::
 
-        pytest tests/unit/test_demodulator_params.py::test_roi_mask_stored_as_copy
+        pytest tests/unit/test_demodulator_params.py::test_inp_roi_mask_stored_as_copy
     """
     p = DemodParams()
     mask = np.zeros((4, 4), dtype=bool)
-    p.roi_mask = mask
+    p.inp_roi_mask = mask
 
     mask[0, 0] = True
 
-    assert p.roi_mask is not mask
-    assert not p.roi_mask[0, 0]
+    assert p.inp_roi_mask is not mask
+    assert not p.inp_roi_mask[0, 0]
+
+
+@pytest.mark.smoke
+@pytest.mark.parametrize(
+    ("value", "exc", "match"),
+    [
+        ("mask", TypeError, "out_roi_mask must be a numpy array"),
+        (np.ones((4, 4), dtype=np.uint8), TypeError, "out_roi_mask must be a boolean array"),
+        (np.ones(4, dtype=bool), ValueError, "out_roi_mask must be 2D or 3D"),
+    ],
+)
+def test_out_roi_mask_validated_like_inp(value: object, exc: type, match: str) -> None:
+    """`out_roi_mask` goes through the same checks as `inp_roi_mask`.
+
+    Run::
+
+        pytest tests/unit/test_demodulator_params.py::test_out_roi_mask_validated_like_inp
+    """
+    p = DemodParams()
+
+    with pytest.raises(exc, match=match):
+        p.out_roi_mask = value
 
 
 @pytest.mark.smoke
@@ -294,7 +317,7 @@ def test_roi_mask_stored_as_copy() -> None:
         ("roi_norm_th", 2.0, ValueError),
         ("n_igrams", 0, ValueError),
         ("delta_list", 5, TypeError),
-        ("roi_mask", np.ones(4, dtype=bool), ValueError),
+        ("inp_roi_mask", np.ones(4, dtype=bool), ValueError),
     ],
 )
 def test_validation_runs_on_construction(field: str, value: object, exc: type) -> None:

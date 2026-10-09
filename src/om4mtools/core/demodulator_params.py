@@ -11,22 +11,26 @@ class DemodParams:
     """Parameters and results for a `Demodulator`.
 
     Holds both the configuration a demodulator needs before `process()`
-    runs (`n_igrams`, `delta_list`, `roi_mask`, `roi_norm_th`) and the
-    output written by `process()` (`z_list`). Field assignment is
-    validated per-field via `_validate()`; call `verify_params()` before
-    processing to check cross-field consistency.
+    runs (`n_igrams`, `delta_list`, `inp_roi_mask`, `roi_norm_th`) and
+    the output written by `process()` (`z_list`, `out_roi_mask`). Field
+    assignment is validated per-field via `_validate()`; call
+    `verify_params()` before processing to check cross-field consistency.
+
+    `process()` only reads the input fields and never overwrites them, so
+    calling it again (even with igrams of a different shape) starts from
+    the same inputs.
 
     Any field may be ``None``; what that means depends on the field:
 
     - `n_igrams`, `delta_list`: not set yet. Usually filled by the
       demodulator's `_setup()`; `verify_params()` rejects ``None``.
-    - `roi_mask`: no mask given; the whole image is processed.
+    - `inp_roi_mask`: no mask given; the whole image is processed.
     - `roi_norm_th`: threshold computed by automatic thresholding of the
       normalized phasor modulation, e.g. Otsu's method (as in MATLAB
       ``graythresh``, scikit-image ``skimage.filters.threshold_otsu`` or
       OpenCV ``cv2.threshold(..., cv2.THRESH_OTSU)``). This is the
       default. A number in [0, 1] sets a fixed threshold instead.
-    - `z_list`: `process()` has not run yet.
+    - `z_list`, `out_roi_mask`: `process()` has not run yet.
 
     Examples
     --------
@@ -41,8 +45,9 @@ class DemodParams:
     ValueError: delta_list has 5 entries, but n_igrams is 6
     """
 
-    roi_mask: BoolArray | None = None  # roi mask
+    inp_roi_mask: BoolArray | None = None  # input roi mask, set by the user
     z_list: tuple[ComplexArray, ...] | None = None  # list of demodulation results
+    out_roi_mask: BoolArray | None = None  # roi mask actually used by process()
     n_igrams: int | None = None  # number of igrams
     roi_norm_th: float | None = None  # roi_mask threshold on modulation; None -> automatic
     delta_list: tuple[float, ...] | None = (
@@ -82,13 +87,13 @@ class DemodParams:
                 value = tuple(float(x) for x in value)
             except (TypeError, ValueError) as e:
                 raise TypeError("delta_list must be a sequence of numbers") from e
-        elif name == "roi_mask":
+        elif name in ("inp_roi_mask", "out_roi_mask"):
             if not isinstance(value, np.ndarray):
-                raise TypeError(f"roi_mask must be a numpy array, got {type(value).__name__}")
+                raise TypeError(f"{name} must be a numpy array, got {type(value).__name__}")
             if value.dtype != np.bool:
-                raise TypeError(f"roi_mask must be a boolean array, got dtype {value.dtype}")
+                raise TypeError(f"{name} must be a boolean array, got dtype {value.dtype}")
             if value.ndim not in (2, 3):
-                raise ValueError(f"roi_mask must be 2D or 3D, got {value.ndim}D")
+                raise ValueError(f"{name} must be 2D or 3D, got {value.ndim}D")
             value = value.copy()
 
         return value
