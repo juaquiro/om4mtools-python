@@ -136,83 +136,54 @@ Spec: `docs/dev/test_and_example_data.md`. Summary rules: CLAUDE.md
 11. Later: migrate hosting to Zenodo (`load_registry_from_doi()`),
     delete `registry.txt`.
 
-## Session handoff (2026-10-01) — start here next session
+## Session handoff (2026-10-09) — start here next session
 
-**Uncommitted work on `develop`** (all tests pass: 46 passed, 3 skipped —
-run with `C:/Users/AQ/.conda/envs/om4mtools/python.exe -m pytest tests --no-cov`;
-the `python` on PATH is Anaconda base and can't import `om4mtools`):
-
-- `DemodParams`: `roi_mask` validation (ndarray, bool dtype, 2D/3D, stored
-  as a writable copy); `n_igrams` must be an int (fixes #3).
-- `types.py`: new `BoolArray` alias.
-- `DemodulatorPSA4.process`: default all-`True` `roi_mask`, `z` set to NaN
-  outside the ROI.
-- New `tests/unit/test_demodulator_params.py` (defaults, `_validate`,
-  `verify_params`).
-- Assorted formatting/ruff cleanups in `core/` and tests.
+**State:** `develop` is clean and pushed (last commit `51cdd7e`). All 65
+tests pass. Run them with the `om4mtools` conda env's Python, not the
+Anaconda base `python` on PATH (it can't import `om4mtools`); on this
+machine: `C:/Users/juaqu/.conda/envs/om4mtools/python.exe -m pytest tests --no-cov`
+(on the other machine the env lives under `C:/Users/AQ/.conda/envs/`).
+`ruff` is on the PowerShell PATH, not in Git Bash.
 
 **Editor setup:** formatting and linting run in VS Code through the Ruff
-extension (installed, with `settings.json` updated). It uses the
-`[tool.ruff]` config in `pyproject.toml` (line length 99, rules
-`E F I W`). The project `.vscode/` is git-ignored.
+extension, using the `[tool.ruff]` config in `pyproject.toml` (line length
+99, rules `E F I W`). The project `.vscode/` is git-ignored.
 
-Pending:
+**Done in the 2026-10-01 → 2026-10-09 sessions** (details in git log):
 
-1. ~~**Commit** the work above. Put `Fixes #3` in the message
-   ([#3](https://github.com/juaquiro/om4mtools-python/issues/3)). Run
-   `ruff check` + `ruff format --check` first.~~
-   **DONE** — commit `2dd1c16`, #3 closed.
-2. ~~**[#6](https://github.com/juaquiro/om4mtools-python/issues/6) `np.bool`
-   breaks on NumPy < 2.0** (`pyproject.toml` allows `numpy>=1.24`). Used in
-   **two** places: `demodulator_params.py` (`roi_mask` dtype check) and
-   `types.py` (`BoolArray = npt.NDArray[np.bool]`). Use `np.bool_`, or raise
-   the floor to `numpy>=2.0`.~~
-   **DONE** — raised the floor to `numpy>=2.0`; `np.bool` is the canonical
-   name there, so the code is unchanged.
-3. ~~**[#4](https://github.com/juaquiro/om4mtools-python/issues/4)
-   `roi_norm_th`** — non-numeric values give Python's raw comparison
-   error; add a type check (and maybe store it as `float`).~~
-   **DONE** — type check (bools rejected), stored as `float`; tests
-   `test_roi_norm_th_type` and `test_roi_norm_th_normalized_to_float`.
-4. ~~**[#5](https://github.com/juaquiro/om4mtools-python/issues/5) `None`
-   accepted for every field** — decide which fields can be `None`
-   (`roi_norm_th` has a real default and shouldn't be).~~
-   **DONE** — `None` is valid for every field. For `roi_norm_th`, `None`
-   is now the default and means automatic thresholding of the modulation
-   (e.g. Otsu). The meaning of `None` for each field is in the
-   `DemodParams` docstring. Implementing the automatic threshold is
-   tracked in [#8](https://github.com/juaquiro/om4mtools-python/issues/8).
-5. ~~**Decide: should `process()` overwrite `demod_params.roi_mask`?**
-   `DemodulatorPSA4.process` currently writes the effective mask back to
-   `self.demod_params.roi_mask`. Discussed downsides: a second `process()`
-   call starts from the previous mask, not the user's (not repeatable), and
-   it breaks if the next igrams have a different shape. Alternative
-   discussed: keep `roi_mask` as input only and store the result in an
-   output field (e.g. `roi_mask_out`), like `z_list`.~~
-   **DONE** — split into input and output: `roi_mask` renamed to
-   `inp_roi_mask` (input, never written by `process()`), new output field
-   `out_roi_mask` (the mask actually used), validated the same way.
-6. ~~**`inp_roi_mask` vs igram shape check** — when the user passes a mask,
-   nothing checks that `inp_roi_mask.shape == igrams[0].shape`. Idea: give
-   `verify_params(igram_shape=...)` an optional argument (keeps validation
-   in `*Params`, per CLAUDE.md) and call it after the `np.asarray`
-   conversion in `process()`.~~
-   **DONE** — checked directly in `DemodulatorPSA4.process()` (simpler than
-   the `verify_params(igram_shape=...)` idea); raises `ValueError` naming
-   both shapes. CLAUDE.md "Design decisions" now allows data-dependent
-   checks in `process()` as an exception to the `*Params` validation rule.
-   Test: `test_process_roi_mask_shape_mismatch_raises`.
-7. ~~**Document "parameters stored by value"** in CLAUDE.md "Design
-   decisions": `*Params` copy mutable inputs in `_validate()`, sequences
-   become tuples, scalars need no copy, data passed to `process()` is not
-   copied. Arrays are kept **writable**, not read-only, which was decided
-   for `inp_roi_mask` / `out_roi_mask`.~~
-   **DONE** — new "`*Params` store parameters by value" paragraph in
-   CLAUDE.md "Design decisions". Also fixed: `_validate()` is called from
-   `__setattr__` (construction + every assignment), not `__post_init__`.
-8. ~~**Tests for the new PSA4 `roi_mask` behavior** — the default
-   all-`True` mask, NaN outside the ROI, and (once item 5 is decided) what
-   happens to `demod_params.roi_mask` after `process()`.~~
-   **DONE** — `test_process_default_roi_is_whole_image`,
-   `test_process_nan_outside_roi`, `test_process_twice_with_different_shapes`
-   in `tests/unit/test_demodulator_psa4.py`.
+- `DemodParams`: per-field validation for `n_igrams` (#3), `roi_norm_th`
+  (#4, stored as `float`), `inp_roi_mask`/`out_roi_mask`; `numpy>=2.0`
+  (#6).
+- `roi_norm_th=None` is the default and means automatic thresholding of
+  the modulation, e.g. Otsu (#5 closed; implementation is #8).
+- `roi_mask` split into `inp_roi_mask` (input, never written by
+  `process()`) and `out_roi_mask` (mask actually used).
+- `DemodulatorPSA4.process()` raises `ValueError` when `inp_roi_mask` and
+  the igrams differ in shape.
+- CLAUDE.md "Design decisions": exception for data-dependent checks in
+  `process()`; "`*Params` store parameters by value"; `_validate()` is
+  called from `__setattr__`.
+- Future work filed as GitHub issues #8–#24, with area labels
+  `demodulator`, `unwrapper`, `igram-filter`, `angle-estimator`,
+  `test-data`, `testing`.
+
+**Next — suggested order:**
+
+1. [#7](https://github.com/juaquiro/om4mtools-python/issues/7)
+   `generate_peaks_igram` — synthetic igrams with known ground truth;
+   every implementation's tests need it.
+2. [#16](https://github.com/juaquiro/om4mtools-python/issues/16) generic
+   N-step PSA (temporal synchronous); `DemodulatorPSA4` stays as a preset.
+3. [#11](https://github.com/juaquiro/om4mtools-python/issues/11)
+   `IgramAngleEstimator` base class →
+   [#12](https://github.com/juaquiro/om4mtools-python/issues/12)
+   orientation →
+   [#13](https://github.com/juaquiro/om4mtools-python/issues/13)
+   direction →
+   [#15](https://github.com/juaquiro/om4mtools-python/issues/15)
+   isotropic quadrature (fills the vortex placeholder in
+   `core/_core_utils.py`).
+4. [#8](https://github.com/juaquiro/om4mtools-python/issues/8) automatic
+   ROI threshold — easier to test once #7 exists.
+5. The rest of #9–#24, and the "Test & example data migration" steps
+   above (#2).
