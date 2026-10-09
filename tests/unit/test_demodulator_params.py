@@ -28,7 +28,7 @@ def test_default_values() -> None:
     assert p.roi_mask is None
     assert p.z_list is None
     assert p.n_igrams is None
-    assert p.roi_norm_th == 0.15
+    assert p.roi_norm_th is None
     assert p.delta_list is None
 
 
@@ -111,6 +111,24 @@ def test_roi_norm_th_normalized_to_float(value: Any) -> None:
 
     assert p.roi_norm_th == value
     assert type(p.roi_norm_th) is float
+
+
+@pytest.mark.smoke
+def test_roi_norm_th_none_accepted() -> None:
+    """`roi_norm_th=None` (automatic thresholding, e.g. Otsu) is accepted.
+
+    Checked on construction and on reassignment after a numeric value.
+
+    Run::
+
+        pytest tests/unit/test_demodulator_params.py::test_roi_norm_th_none_accepted
+    """
+    p = DemodParams(roi_norm_th=None)
+    assert p.roi_norm_th is None
+
+    p.roi_norm_th = 0.3
+    p.roi_norm_th = None
+    assert p.roi_norm_th is None
 
 
 @pytest.mark.smoke

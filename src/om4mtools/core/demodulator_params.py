@@ -16,6 +16,18 @@ class DemodParams:
     validated per-field via `_validate()`; call `verify_params()` before
     processing to check cross-field consistency.
 
+    Any field may be ``None``; what that means depends on the field:
+
+    - `n_igrams`, `delta_list`: not set yet. Usually filled by the
+      demodulator's `_setup()`; `verify_params()` rejects ``None``.
+    - `roi_mask`: no mask given; the whole image is processed.
+    - `roi_norm_th`: threshold computed by automatic thresholding of the
+      normalized phasor modulation, e.g. Otsu's method (as in MATLAB
+      ``graythresh``, scikit-image ``skimage.filters.threshold_otsu`` or
+      OpenCV ``cv2.threshold(..., cv2.THRESH_OTSU)``). This is the
+      default. A number in [0, 1] sets a fixed threshold instead.
+    - `z_list`: `process()` has not run yet.
+
     Examples
     --------
     >>> p = DemodParams()
@@ -32,7 +44,7 @@ class DemodParams:
     roi_mask: BoolArray | None = None  # roi mask
     z_list: tuple[ComplexArray, ...] | None = None  # list of demodulation results
     n_igrams: int | None = None  # number of igrams
-    roi_norm_th: float = 0.15  # threshold used to generate roi_mask from phasor modulation
+    roi_norm_th: float | None = None  # roi_mask threshold on modulation; None -> automatic
     delta_list: tuple[float, ...] | None = (
         None  # rad. values in rads for the demodulator phase steps
     )

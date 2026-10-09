@@ -174,9 +174,14 @@ Pending:
    error; add a type check (and maybe store it as `float`).~~
    **DONE** — type check (bools rejected), stored as `float`; tests
    `test_roi_norm_th_type` and `test_roi_norm_th_normalized_to_float`.
-4. **[#5](https://github.com/juaquiro/om4mtools-python/issues/5) `None`
+4. ~~**[#5](https://github.com/juaquiro/om4mtools-python/issues/5) `None`
    accepted for every field** — decide which fields can be `None`
-   (`roi_norm_th` has a real default and shouldn't be).
+   (`roi_norm_th` has a real default and shouldn't be).~~
+   **DONE** — `None` is valid for every field. For `roi_norm_th`, `None`
+   is now the default and means automatic thresholding of the modulation
+   (e.g. Otsu). The meaning of `None` for each field is in the
+   `DemodParams` docstring. Implementing the automatic threshold is
+   tracked in [#8](https://github.com/juaquiro/om4mtools-python/issues/8).
 5. **Decide: should `process()` overwrite `demod_params.roi_mask`?**
    `DemodulatorPSA4.process` currently writes the effective mask back to
    `self.demod_params.roi_mask`. Discussed downsides: a second `process()`
