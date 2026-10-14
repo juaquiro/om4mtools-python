@@ -25,6 +25,14 @@ Python library for fringe-pattern processing (OM4M group).
   write Python. Never design a feature so it only works through the
   CLI or GUI; it must work by importing the core class directly first.
 
+## Development environment
+
+This project is developed in the conda env **`om4mtools`**. Before
+running Python, pytest, ruff, black, or pip, check that it's active
+(`$env:CONDA_DEFAULT_ENV` / `$CONDA_DEFAULT_ENV` is `om4mtools`). If
+it isn't, don't install into or run against whatever env is active —
+remind the user to run `conda activate om4mtools` first.
+
 ## Hard rule: dependency direction
 
 **`core/` never imports from `cli/`, `gui/`, or `web/`.** Interfaces
